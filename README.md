@@ -80,10 +80,25 @@ frontend_app/
 │   │   ├── favicon.ico
 │   │   └── avatars/
 │   └── libs/
-│       ├── bootstrap/         # Bootstrap CSS/JS
-│       ├── jquery/
-│       ├── chart.js/
-│       └── datatables/
+│   |   ├── bootstrap/         # Bootstrap CSS/JS
+│   |   ├── jquery/
+│   |   ├── chart.js/
+│   |   └── datatables/
+|   ├── logos/
+│   ├── coosalud.png
+│   ├── biomed.png  
+│   ├── medicorp.png
+│   └── default.png
+├── hero/
+│   ├── coosalud-doctor.jpg
+│   ├── biomed-technology.jpg
+│   ├── medicorp-team.jpg
+│   └── default-doctor.jpg
+└── favicon/
+|    ├── coosalud.ico
+|    ├── biomed.ico
+|    ├── medicorp.ico
+|    └── default.ico
 ├── utils/
 │   ├── __init__.py
 │   ├── decorators.py          # Decoradores de autenticación

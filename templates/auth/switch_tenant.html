@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔧 Cambiar Tenant (Modo Debug)</h3>
+                    <p class="mb-0 text-muted">Solo disponible en modo desarrollo</p>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Tenant actual:</strong> {{ current_tenant }}
+                    </div>
+                    
+                    <h5>Tenants Disponibles:</h5>
+                    <div class="row">
+                        {% for tenant_info in available_tenants %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card tenant-card {{ 'border-primary' if tenant_info.id == current_tenant else '' }}">
+                                <div class="card-body text-center">
+                                    {% if tenant_info.logo_url %}
+                                    <img src="{{ tenant_info.logo_url }}" alt="{{ tenant_info.name }}" 
+                                         class="img-fluid mb-2 tenant-logo">
+                                    {% endif %}
+                                    
+                                    <h6 class="card-title">{{ tenant_info.name }}</h6>
+                                    <p class="card-text small text-muted">{{ tenant_info.slogan }}</p>
+                                    
+                                    <div class="mb-2">
+                                        <span class="badge tenant-badge" data-color="{{ tenant_info.primary_color }}">
+                                            {{ tenant_info.portal_name }}
+                                        </span>
+                                    </div>
+                                    
+                                    {% if tenant_info.id == current_tenant %}
+                                    <button class="btn btn-primary btn-sm" disabled>
+                                        <i class="fas fa-check"></i> Actual
+                                    </button>
+                                    {% else %}
+                                    <a href="/?tenant={{ tenant_info.id }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-exchange-alt"></i> Cambiar
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5>Cambio Manual:</h5>
+                    <form method="get" action="/" class="row g-3">
+                        <div class="col-md-8">
+                            <select name="tenant" class="form-select">
+                                {% for tenant_info in available_tenants %}
+                                <option value="{{ tenant_info.id }}" {{ 'selected' if tenant_info.id == current_tenant else '' }}>
+                                    {{ tenant_info.name }} ({{ tenant_info.id }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-arrow-right"></i> Cambiar
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-4">
+                        <h6>URLs de Prueba:</h6>
+                        <ul class="list-unstyled">
+                            {% for tenant_info in available_tenants %}
+                            <li class="mb-1">
+                                <a href="/?tenant={{ tenant_info.id }}" target="_blank" class="test-link">
+                                    /?tenant={{ tenant_info.id }}
+                                </a> - {{ tenant_info.name }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="/" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                    <a href="/tenant/info" class="btn btn-info" target="_blank">
+                        <i class="fas fa-info-circle"></i> Info del Tenant
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tenant-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        height: 100%;
+    }
+    
+    .tenant-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .tenant-logo {
+        max-height: 50px;
+        object-fit: contain;
+    }
+    
+    .tenant-badge {
+        color: white !important;
+    }
+    
+    .test-link {
+        font-family: monospace;
+        background-color: #f8f9fa;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-decoration: none;
+    }
+    
+    .test-link:hover {
+        background-color: #e9ecef;
+        text-decoration: none;
+    }
+    
+    .alert-info {
+        border-left: 4px solid #17a2b8;
+    }
+    
+    /* Aplicar colores dinámicos a los badges */
+    {% if tenant and tenant.colors %}
+    .btn-primary {
+        background-color: {{ tenant.colors.primary or '#007bff' }};
+        border-color: {{ tenant.colors.primary or '#007bff' }};
+    }
+    
+    .btn-primary:hover {
+        background-color: {{ tenant.colors.accent or '#0056b3' }};
+        border-color: {{ tenant.colors.accent or '#0056b3' }};
+    }
+    
+    .border-primary {
+        border-color: {{ tenant.colors.primary or '#007bff' }} !important;
+    }
+    {% endif %}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar colores dinámicos a los badges
+    document.querySelectorAll('.tenant-badge').forEach(function(badge) {
+        const color = badge.getAttribute('data-color');
+        if (color) {
+            badge.style.backgroundColor = color;
+            badge.style.borderColor = color;
+        }
+    });
+    
+    // Añadir efecto hover a las cards
+    document.querySelectorAll('.tenant-card').forEach(function(card) {
+        card.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('border-primary')) {
+                this.style.borderColor = '#007bff';
+            }
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('border-primary')) {
+                this.style.borderColor = '';
+            }
+        });
+    });
+    
+    console.log('🔧 Switch Tenant page loaded');
+    console.log('📊 Available tenants:', {{ available_tenants|length }});
+    console.log('🏢 Current tenant:', '{{ current_tenant }}');
+});
+</script>
+{% endblock %}
