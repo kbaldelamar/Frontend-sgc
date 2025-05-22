@@ -1,17 +1,44 @@
+# templates/auth/login.html
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title or "Portal IPS - Iniciar Sesión" }}</title>
+    
+    <!-- Meta tags dinámicos del tenant -->
+    <title>{{ tenant_meta.title if tenant_meta else (title or "Portal IPS - Iniciar Sesión") }}</title>
+    {% if tenant_meta and tenant_meta.description %}
+    <meta name="description" content="{{ tenant_meta.description }}">
+    {% endif %}
+    {% if tenant_meta and tenant_meta.keywords %}
+    <meta name="keywords" content="{{ tenant_meta.keywords }}">
+    {% endif %}
+    {% if tenant and tenant.colors and tenant.colors.primary %}
+    <meta name="theme-color" content="{{ tenant.colors.primary }}">
+    {% endif %}
+    
+    <!-- Favicon dinámico -->
+    {% if tenant and tenant.favicon_url %}
+    <link rel="icon" href="{{ tenant.favicon_url }}" type="image/x-icon">
+    {% else %}
+    <link rel="icon" href="/static/images/favicon/default.ico" type="image/x-icon">
+    {% endif %}
+
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- CSS dinámico del tenant -->
+    <link href="/tenant.css" rel="stylesheet">
+    
     <style>
-        body {
+        body.login-page {
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: {% if tenant and tenant.gradients and tenant.gradients.background %}{{ tenant.gradients.background }}{% else %}linear-gradient(135deg, #667eea 0%, #764ba2 100%){% endif %};
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             align-items: center;
@@ -24,11 +51,15 @@
             width: 100%;
             max-width: 1200px;
             margin: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            overflow: hidden;
+            background: white;
         }
 
         .hero-section {
             flex: 1;
-            background: rgba(255, 255, 255, 0.1);
+            background: {% if tenant and tenant.gradients and tenant.gradients.primary %}{{ tenant.gradients.primary }}{% else %}linear-gradient(135deg, #4CAF50, #2E8B57){% endif %};
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
@@ -58,16 +89,27 @@
 
         .doctor-image {
             width: 100%;
-            height: auto;
+            height: 300px;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
             background: linear-gradient(145deg, #f0f8ff, #e6f3ff);
-            padding: 2rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 8rem;
-            color: #4a90e2;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .doctor-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
+        }
+
+        .doctor-image .placeholder-icon {
+            font-size: 6rem;
+            color: {% if tenant and tenant.colors and tenant.colors.info %}{{ tenant.colors.info }}{% else %}#3498db{% endif %};
         }
 
         .login-section {
@@ -76,13 +118,24 @@
             padding: 0;
             display: flex;
             flex-direction: column;
-            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .login-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: {% if tenant and tenant.gradients and tenant.gradients.primary %}{{ tenant.gradients.primary }}{% else %}linear-gradient(to bottom, #4CAF50, #00BCD4){% endif %};
         }
 
         .login-header {
             padding: 2rem 2rem 1rem;
             text-align: center;
             border-bottom: 1px solid #f0f0f0;
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
         }
 
         .logo-container {
@@ -92,10 +145,17 @@
         .logo {
             font-size: 2rem;
             font-weight: bold;
-            background: linear-gradient(135deg, #4CAF50, #2E8B57);
+            background: {% if tenant and tenant.gradients and tenant.gradients.primary %}{{ tenant.gradients.primary }}{% else %}linear-gradient(135deg, #4CAF50, #2E8B57){% endif %};
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .company-slogan {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin: 0;
         }
 
         .portal-title {
@@ -103,17 +163,19 @@
             font-weight: 700;
             color: #2c3e50;
             margin: 0;
+            letter-spacing: 1px;
         }
 
         .portal-subtitle {
-            color: #00BCD4;
+            color: {% if tenant and tenant.colors and tenant.colors.secondary %}{{ tenant.colors.secondary }}{% else %}#00BCD4{% endif %};
             font-weight: 600;
             font-size: 2.2rem;
             margin: 0.5rem 0;
+            text-shadow: 0 2px 4px rgba(0, 188, 212, 0.2);
         }
 
         .video-link {
-            background: linear-gradient(135deg, #00BCD4, #0097A7);
+            background: {% if tenant and tenant.gradients and tenant.gradients.primary %}{{ tenant.gradients.primary }}{% else %}linear-gradient(135deg, #00BCD4, #0097A7){% endif %};
             color: white;
             border: none;
             padding: 0.5rem 1.5rem;
@@ -123,12 +185,14 @@
             display: inline-block;
             margin-top: 1rem;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .video-link:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 188, 212, 0.3);
+            box-shadow: 0 5px 15px {% if tenant and tenant.colors and tenant.colors.secondary %}{{ tenant.colors.secondary }}33{% else %}rgba(0, 188, 212, 0.3){% endif %};
             color: white;
+            text-decoration: none;
         }
 
         .login-form {
@@ -145,6 +209,18 @@
             color: #2c3e50;
             margin-bottom: 2rem;
             text-align: left;
+            position: relative;
+        }
+
+        .form-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: {% if tenant and tenant.gradients and tenant.gradients.primary %}{{ tenant.gradients.primary }}{% else %}linear-gradient(to right, #4CAF50, #00BCD4){% endif %};
+            border-radius: 2px;
         }
 
         .form-group {
@@ -156,10 +232,11 @@
             margin-bottom: 0.5rem;
             font-weight: 600;
             color: #2c3e50;
+            transition: all 0.3s ease;
         }
 
         .required {
-            color: #e74c3c;
+            color: {% if tenant and tenant.colors and tenant.colors.danger %}{{ tenant.colors.danger }}{% else %}#e74c3c{% endif %};
         }
 
         .form-control {
@@ -174,9 +251,10 @@
 
         .form-control:focus {
             outline: none;
-            border-color: #00BCD4;
+            border-color: {% if tenant and tenant.colors and tenant.colors.secondary %}{{ tenant.colors.secondary }}{% else %}#00BCD4{% endif %};
             background: white;
-            box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+            box-shadow: 0 0 0 3px {% if tenant and tenant.colors and tenant.colors.secondary %}{{ tenant.colors.secondary }}1a{% else %}rgba(0, 188, 212, 0.1){% endif %};
+            transform: translateY(-1px);
         }
 
         .password-container {
@@ -192,7 +270,14 @@
             border: none;
             color: #6c757d;
             cursor: pointer;
-            padding: 0.25rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: {% if tenant and tenant.colors and tenant.colors.secondary %}{{ tenant.colors.secondary }}{% else %}#00BCD4{% endif %};
+            background: {% if tenant and tenant.colors and tenant.colors.secondary %}{{ tenant.colors.secondary }}1a{% else %}rgba(0, 188, 212, 0.1){% endif %};
         }
 
         .forgot-password {
@@ -201,19 +286,32 @@
         }
 
         .forgot-password a {
-            color: #00BCD4;
+            color: {% if tenant and tenant.colors and tenant.colors.secondary %}{{ tenant.colors.secondary }}{% else %}#00BCD4{% endif %};
             text-decoration: none;
             font-size: 0.9rem;
+            transition: all 0.3s ease;
+            position: relative;
         }
 
-        .forgot-password a:hover {
-            text-decoration: underline;
+        .forgot-password a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: {% if tenant and tenant.colors and tenant.colors.secondary %}{{ tenant.colors.secondary }}{% else %}#00BCD4{% endif %};
+            transition: width 0.3s ease;
+        }
+
+        .forgot-password a:hover::after {
+            width: 100%;
         }
 
         .login-btn {
             width: 100%;
             padding: 1rem;
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            background: {% if tenant and tenant.gradients and tenant.gradients.primary %}{{ tenant.gradients.primary }}{% else %}linear-gradient(135deg, #4CAF50, #45a049){% endif %};
             color: white;
             border: none;
             border-radius: 8px;
@@ -222,15 +320,39 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-top: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
         }
 
         .login-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+            box-shadow: 0 5px 15px {% if tenant and tenant.colors and tenant.colors.primary %}{{ tenant.colors.primary }}33{% else %}rgba(76, 175, 80, 0.3){% endif %};
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
         }
 
         .login-btn:active {
             transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .register-link {
@@ -241,12 +363,14 @@
         }
 
         .register-link a {
-            color: #00BCD4;
+            color: {% if tenant and tenant.colors and tenant.colors.secondary %}{{ tenant.colors.secondary }}{% else %}#00BCD4{% endif %};
             text-decoration: none;
             font-weight: 600;
+            transition: all 0.3s ease;
         }
 
         .register-link a:hover {
+            color: {% if tenant and tenant.colors and tenant.colors.accent %}{{ tenant.colors.accent }}{% else %}#0097A7{% endif %};
             text-decoration: underline;
         }
 
@@ -255,24 +379,69 @@
             padding: 0.75rem 1rem;
             border-radius: 8px;
             border: none;
+            position: relative;
+            overflow: hidden;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .alert-danger {
             background: #ffebee;
             color: #c62828;
-            border-left: 4px solid #e74c3c;
+            border-left: 4px solid {% if tenant and tenant.colors and tenant.colors.danger %}{{ tenant.colors.danger }}{% else %}#e74c3c{% endif %};
         }
 
         .alert-success {
             background: #e8f5e8;
             color: #2e7d2e;
-            border-left: 4px solid #4caf50;
+            border-left: 4px solid {% if tenant and tenant.colors and tenant.colors.success %}{{ tenant.colors.success }}{% else %}#27ae60{% endif %};
         }
 
         .recaptcha-container {
             margin: 1.5rem 0;
             display: flex;
             justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-check-input {
+            width: 1.2rem;
+            height: 1.2rem;
+            cursor: pointer;
+        }
+
+        .form-check-label {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .login-container {
+                border-radius: 0;
+                box-shadow: none;
+                min-height: 100vh;
+            }
         }
 
         @media (max-width: 768px) {
@@ -283,12 +452,16 @@
 
             .hero-section {
                 flex: none;
-                min-height: 200px;
+                min-height: 250px;
                 padding: 1rem;
             }
 
             .doctor-image {
+                height: 200px;
                 padding: 1rem;
+            }
+
+            .doctor-image .placeholder-icon {
                 font-size: 4rem;
             }
 
@@ -297,11 +470,46 @@
                 box-shadow: none;
             }
 
+            .login-section::before {
+                display: none;
+            }
+
             .login-form {
                 padding: 1.5rem;
             }
+
+            .login-header {
+                padding: 1.5rem 1.5rem 1rem;
+            }
+
+            .portal-subtitle {
+                font-size: 1.8rem;
+            }
         }
 
+        @media (max-width: 480px) {
+            .login-form {
+                padding: 1rem;
+            }
+
+            .login-header {
+                padding: 1rem;
+            }
+
+            .form-title {
+                font-size: 1.3rem;
+            }
+
+            .portal-title {
+                font-size: 1.5rem;
+            }
+
+            .portal-subtitle {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Animaciones de entrada */
         .fade-in {
             animation: fadeIn 0.6s ease-in;
         }
@@ -333,13 +541,17 @@
         }
     </style>
 </head>
-<body>
+<body class="login-page">
     <div class="login-container">
         <!-- Hero Section -->
         <div class="hero-section fade-in">
             <div class="doctor-illustration">
                 <div class="doctor-image">
-                    <i class="fas fa-user-md"></i>
+                    {% if tenant and tenant.hero_image_url %}
+                    <img src="{{ tenant.hero_image_url }}" alt="{{ tenant.company_name if tenant else 'Portal IPS' }}">
+                    {% else %}
+                    <i class="fas fa-user-md placeholder-icon"></i>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -348,19 +560,23 @@
         <div class="login-section slide-in-right">
             <div class="login-header">
                 <div class="logo-container">
-                    <div class="logo">COOSALUD</div>
-                    <p class="text-muted small mb-0">Por Ti y Tu Bienestar</p>
+                    <div class="logo">{{ tenant.company_name if tenant else 'PORTAL IPS' }}</div>
+                    {% if tenant and tenant.company_slogan %}
+                    <p class="company-slogan mb-0">{{ tenant.company_slogan }}</p>
+                    {% endif %}
                 </div>
-                <h1 class="portal-title">portal</h1>
-                <h2 class="portal-subtitle">IPS</h2>
-                <a href="#" class="video-link">
+                <h1 class="portal-title">{{ tenant.portal_name if tenant else 'portal' }}</h1>
+                <h2 class="portal-subtitle">{{ tenant.portal_subtitle if tenant else 'IPS' }}</h2>
+                {% if tenant and tenant.urls and tenant.urls.videos %}
+                <a href="{{ tenant.urls.videos }}" class="video-link" target="_blank">
                     <i class="fas fa-play-circle me-2"></i>
                     VER VIDEOS INSTRUCTIVOS
                 </a>
+                {% endif %}
             </div>
 
             <div class="login-form">
-                <h3 class="form-title">Iniciar sesión</h3>
+                <h3 class="form-title">{{ tenant.login.title if tenant and tenant.login else 'Iniciar sesión' }}</h3>
                 
                 <!-- Mensajes de error/éxito -->
                 {% if error %}
@@ -387,7 +603,7 @@
                             class="form-control" 
                             id="username" 
                             name="username"
-                            placeholder="biomedips@gmail.com"
+                            placeholder="{{ tenant.login.username_placeholder if tenant and tenant.login else 'correo@ejemplo.com' }}"
                             required
                         >
                     </div>
@@ -402,19 +618,22 @@
                                 class="form-control" 
                                 id="password" 
                                 name="password"
-                                placeholder="••••••••"
+                                placeholder="{{ tenant.login.password_placeholder if tenant and tenant.login else '••••••••' }}"
                                 required
                             >
                             <button type="button" class="password-toggle" onclick="togglePassword()">
                                 <i class="fas fa-eye" id="passwordIcon"></i>
                             </button>
                         </div>
+                        {% if enable_password_reset %}
                         <div class="forgot-password">
                             <a href="/forgot-password">¿Olvidaste tu contraseña?</a>
                         </div>
+                        {% endif %}
                     </div>
 
                     <!-- Checkbox remember me -->
+                    {% if enable_remember_me %}
                     <div class="form-group">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="remember_me" name="remember_me">
@@ -423,6 +642,7 @@
                             </label>
                         </div>
                     </div>
+                    {% endif %}
 
                     <!-- ReCAPTCHA Simulado -->
                     <div class="recaptcha-container">
@@ -445,7 +665,7 @@
                 {% if enable_registration %}
                 <div class="register-link">
                     <p class="mb-0">
-                        No tienes una cuenta? 
+                        ¿No tienes una cuenta? 
                         <a href="/register">Regístrate aquí</a>
                     </p>
                 </div>
@@ -454,7 +674,12 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Configuración JavaScript del tenant -->
+    <script src="/tenant/config.js"></script>
+    
     <script>
         // Toggle password visibility
         function togglePassword() {
@@ -504,6 +729,12 @@
                     setTimeout(() => alert.remove(), 300);
                 }, 5000);
             });
+
+            // Log información del tenant si está disponible
+            if (window.TENANT_CONFIG) {
+                console.log('🏢 Tenant cargado:', window.TENANT_CONFIG.name);
+                console.log('🎨 Colores del tenant:', window.TENANT_CONFIG.colors);
+            }
         });
 
         // Add focus effects
@@ -519,3 +750,4 @@
     </script>
 </body>
 </html>
+```

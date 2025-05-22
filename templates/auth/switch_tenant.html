@@ -1,94 +1,200 @@
 {% extends "base.html" %}
 
+{% block title %}Cambiar Tenant - {{ tenant.company_name if tenant else 'Portal' }}{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="card">
-                <div class="card-header">
-                    <h3>🔧 Cambiar Tenant (Modo Debug)</h3>
-                    <p class="mb-0 text-muted">Solo disponible en modo desarrollo</p>
+        <div class="col-md-12">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">
+                                <i class="fas fa-exchange-alt me-2"></i>
+                                🔧 Cambiar Tenant (Modo Debug)
+                            </h3>
+                            <p class="mb-0 opacity-75">Solo disponible en modo desarrollo</p>
+                        </div>
+                        <div class="badge bg-light text-dark fs-6">
+                            <i class="fas fa-server me-1"></i>
+                            {{ available_tenants|length }} tenants disponibles
+                        </div>
+                    </div>
                 </div>
+                
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <strong>Tenant actual:</strong> {{ current_tenant }}
+                    <!-- Información del tenant actual -->
+                    <div class="alert alert-info border-left-info">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="alert-heading mb-2">
+                                    <i class="fas fa-building me-2"></i>
+                                    Tenant Actual: <strong>{{ current_tenant }}</strong>
+                                </h5>
+                                {% if tenant %}
+                                <p class="mb-0">
+                                    <strong>{{ tenant.company_name }}</strong> - {{ tenant.company_slogan or 'Sin slogan' }}
+                                    <br>
+                                    <small class="text-muted">
+                                        Portal: {{ tenant.portal_name }} {{ tenant.portal_subtitle }}
+                                        {% if tenant.company_nit %} | NIT: {{ tenant.company_nit }}{% endif %}
+                                    </small>
+                                </p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                {% if tenant and tenant.logo_url %}
+                                <img src="{{ tenant.logo_url }}" alt="{{ tenant.company_name }}" 
+                                     class="img-fluid tenant-logo-current" style="max-height: 60px;">
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                     
-                    <h5>Tenants Disponibles:</h5>
+                    <!-- Grid de tenants disponibles -->
+                    <h5 class="mb-4">
+                        <i class="fas fa-th-large me-2"></i>
+                        Tenants Disponibles:
+                    </h5>
+                    
                     <div class="row">
                         {% for tenant_info in available_tenants %}
-                        <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card tenant-card {{ 'border-primary' if tenant_info.id == current_tenant else '' }}">
-                                <div class="card-body text-center">
-                                    {% if tenant_info.logo_url %}
-                                    <img src="{{ tenant_info.logo_url }}" alt="{{ tenant_info.name }}" 
-                                         class="img-fluid mb-2 tenant-logo">
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card tenant-card h-100 {{ 'border-primary shadow-lg current-tenant' if tenant_info.id == current_tenant else 'border-light' }}">
+                                <div class="card-body text-center position-relative">
+                                    {% if tenant_info.id == current_tenant %}
+                                    <div class="position-absolute top-0 end-0 p-2">
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Actual
+                                        </span>
+                                    </div>
                                     {% endif %}
                                     
-                                    <h6 class="card-title">{{ tenant_info.name }}</h6>
-                                    <p class="card-text small text-muted">{{ tenant_info.slogan }}</p>
+                                    <!-- Logo del tenant -->
+                                    <div class="tenant-logo-container mb-3">
+                                        {% if tenant_info.logo_url %}
+                                        <img src="{{ tenant_info.logo_url }}" alt="{{ tenant_info.name }}" 
+                                             class="img-fluid tenant-logo">
+                                        {% else %}
+                                        <div class="tenant-logo-placeholder">
+                                            <i class="fas fa-building fa-2x text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
                                     
-                                    <div class="mb-2">
-                                        <span class="badge tenant-badge" data-color="{{ tenant_info.primary_color }}">
-                                            {{ tenant_info.portal_name }}
+                                    <!-- Información del tenant -->
+                                    <h6 class="card-title fw-bold">{{ tenant_info.name }}</h6>
+                                    <p class="card-text small text-muted mb-2">{{ tenant_info.slogan or 'Sin slogan' }}</p>
+                                    
+                                    <!-- Badge del portal -->
+                                    <div class="mb-3">
+                                        <span class="badge tenant-badge fs-6" 
+                                              data-color="{{ tenant_info.primary_color or '#007bff' }}"
+                                              style="background-color: {{ tenant_info.primary_color or '#007bff' }};">
+                                            {{ tenant_info.portal_name or 'portal' }}
                                         </span>
                                     </div>
                                     
-                                    {% if tenant_info.id == current_tenant %}
-                                    <button class="btn btn-primary btn-sm" disabled>
-                                        <i class="fas fa-check"></i> Actual
-                                    </button>
-                                    {% else %}
-                                    <a href="/?tenant={{ tenant_info.id }}" class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-exchange-alt"></i> Cambiar
-                                    </a>
-                                    {% endif %}
+                                    <!-- ID y información técnica -->
+                                    <div class="small text-muted mb-3">
+                                        <div>ID: <code>{{ tenant_info.id }}</code></div>
+                                        {% if tenant_info.primary_color %}
+                                        <div>Color: <code>{{ tenant_info.primary_color }}</code></div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Botones de acción -->
+                                    <div class="d-grid gap-2">
+                                        {% if tenant_info.id == current_tenant %}
+                                        <button class="btn btn-success btn-sm" disabled>
+                                            <i class="fas fa-check-circle me-1"></i> Tenant Actual
+                                        </button>
+                                        {% else %}
+                                        <a href="/?tenant={{ tenant_info.id }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-exchange-alt me-1"></i> Cambiar a este tenant
+                                        </a>
+                                        {% endif %}
+                                        
+                                        <a href="/tenant/info?tenant={{ tenant_info.id }}" 
+                                           class="btn btn-outline-info btn-sm" target="_blank">
+                                            <i class="fas fa-info-circle me-1"></i> Ver Info
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
                     
-                    <hr>
+                    <hr class="my-4">
                     
-                    <h5>Cambio Manual:</h5>
-                    <form method="get" action="/" class="row g-3">
+                    <!-- Cambio manual -->
+                    <div class="row">
                         <div class="col-md-8">
-                            <select name="tenant" class="form-select">
-                                {% for tenant_info in available_tenants %}
-                                <option value="{{ tenant_info.id }}" {{ 'selected' if tenant_info.id == current_tenant else '' }}>
-                                    {{ tenant_info.name }} ({{ tenant_info.id }})
-                                </option>
-                                {% endfor %}
-                            </select>
+                            <h5 class="mb-3">
+                                <i class="fas fa-edit me-2"></i>
+                                Cambio Manual:
+                            </h5>
+                            <form method="get" action="/" class="row g-3">
+                                <div class="col-md-8">
+                                    <select name="tenant" class="form-select form-select-lg">
+                                        {% for tenant_info in available_tenants %}
+                                        <option value="{{ tenant_info.id }}" 
+                                                {{ 'selected' if tenant_info.id == current_tenant else '' }}>
+                                            {{ tenant_info.name }} ({{ tenant_info.id }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-success btn-lg w-100">
+                                        <i class="fas fa-arrow-right me-1"></i> Cambiar
+                                    </button>
+                                </div>
+                            </form>
                         </div>
+                        
                         <div class="col-md-4">
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-arrow-right"></i> Cambiar
-                            </button>
+                            <h6 class="mb-3">
+                                <i class="fas fa-link me-2"></i>
+                                URLs de Prueba:
+                            </h6>
+                            <div class="list-group list-group-flush">
+                                {% for tenant_info in available_tenants %}
+                                <a href="/?tenant={{ tenant_info.id }}" 
+                                   target="_blank" 
+                                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <code class="test-link">/?tenant={{ tenant_info.id }}</code>
+                                        <br>
+                                        <small class="text-muted">{{ tenant_info.name }}</small>
+                                    </div>
+                                    <i class="fas fa-external-link-alt text-muted"></i>
+                                </a>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </form>
-                    
-                    <div class="mt-4">
-                        <h6>URLs de Prueba:</h6>
-                        <ul class="list-unstyled">
-                            {% for tenant_info in available_tenants %}
-                            <li class="mb-1">
-                                <a href="/?tenant={{ tenant_info.id }}" target="_blank" class="test-link">
-                                    /?tenant={{ tenant_info.id }}
-                                </a> - {{ tenant_info.name }}
-                            </li>
-                            {% endfor %}
-                        </ul>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <a href="/" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Volver
-                    </a>
-                    <a href="/tenant/info" class="btn btn-info" target="_blank">
-                        <i class="fas fa-info-circle"></i> Info del Tenant
-                    </a>
+                
+                <!-- Footer con acciones -->
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="/" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Volver
+                            </a>
+                            <a href="/tenant/info" class="btn btn-info" target="_blank">
+                                <i class="fas fa-info-circle me-1"></i> Info del Tenant Actual
+                            </a>
+                        </div>
+                        
+                        <div class="text-muted small">
+                            <i class="fas fa-clock me-1"></i>
+                            Última actualización: <span id="lastUpdate"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,43 +204,79 @@
 
 {% block extra_css %}
 <style>
-    .tenant-card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        height: 100%;
+    .border-left-info {
+        border-left: 4px solid #17a2b8 !important;
     }
     
-    .tenant-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    .tenant-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .tenant-card:hover:not(.current-tenant) {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+        border-color: #007bff !important;
+    }
+    
+    .current-tenant {
+        transform: scale(1.02);
+        border-width: 2px !important;
+    }
+    
+    .tenant-logo-container {
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 10px;
     }
     
     .tenant-logo {
-        max-height: 50px;
+        max-height: 60px;
+        max-width: 100%;
         object-fit: contain;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+    
+    .tenant-logo-current {
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+    }
+    
+    .tenant-logo-placeholder {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e9ecef;
+        border-radius: 8px;
+        width: 100%;
     }
     
     .tenant-badge {
         color: white !important;
+        border-radius: 20px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
     
     .test-link {
-        font-family: monospace;
+        font-family: 'Courier New', monospace;
         background-color: #f8f9fa;
         padding: 2px 6px;
         border-radius: 4px;
-        text-decoration: none;
+        font-size: 0.85rem;
+        color: #495057;
     }
     
-    .test-link:hover {
+    .list-group-item:hover .test-link {
         background-color: #e9ecef;
-        text-decoration: none;
     }
     
-    .alert-info {
-        border-left: 4px solid #17a2b8;
-    }
-    
-    /* Aplicar colores dinámicos a los badges */
+    /* Aplicar colores dinámicos del tenant actual */
     {% if tenant and tenant.colors %}
     .btn-primary {
         background-color: {{ tenant.colors.primary or '#007bff' }};
@@ -146,43 +288,145 @@
         border-color: {{ tenant.colors.accent or '#0056b3' }};
     }
     
+    .btn-outline-primary {
+        color: {{ tenant.colors.primary or '#007bff' }};
+        border-color: {{ tenant.colors.primary or '#007bff' }};
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: {{ tenant.colors.primary or '#007bff' }};
+        border-color: {{ tenant.colors.primary or '#007bff' }};
+    }
+    
     .border-primary {
         border-color: {{ tenant.colors.primary or '#007bff' }} !important;
     }
+    
+    .bg-primary {
+        background-color: {{ tenant.colors.primary or '#007bff' }} !important;
+    }
+    
+    .text-primary {
+        color: {{ tenant.colors.primary or '#007bff' }} !important;
+    }
     {% endif %}
+    
+    /* Animaciones */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .tenant-card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .tenant-logo-container {
+            height: 60px;
+        }
+        
+        .tenant-logo {
+            max-height: 40px;
+        }
+        
+        .tenant-card {
+            margin-bottom: 1rem;
+        }
+        
+        .current-tenant {
+            transform: none;
+        }
+        
+        .tenant-card:hover {
+            transform: none;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Mostrar hora de última actualización
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+    
     // Aplicar colores dinámicos a los badges
     document.querySelectorAll('.tenant-badge').forEach(function(badge) {
         const color = badge.getAttribute('data-color');
         if (color) {
             badge.style.backgroundColor = color;
             badge.style.borderColor = color;
+            
+            // Ajustar brillo para texto si es necesario
+            const rgb = hexToRgb(color);
+            if (rgb) {
+                const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+                badge.style.color = brightness > 128 ? '#000' : '#fff';
+            }
         }
     });
     
-    // Añadir efecto hover a las cards
-    document.querySelectorAll('.tenant-card').forEach(function(card) {
+    // Efectos hover para las cards
+    document.querySelectorAll('.tenant-card:not(.current-tenant)').forEach(function(card) {
         card.addEventListener('mouseenter', function() {
-            if (!this.classList.contains('border-primary')) {
-                this.style.borderColor = '#007bff';
-            }
+            this.style.borderColor = '#007bff';
+            this.style.borderWidth = '2px';
         });
         
         card.addEventListener('mouseleave', function() {
-            if (!this.classList.contains('border-primary')) {
-                this.style.borderColor = '';
-            }
+            this.style.borderColor = '';
+            this.style.borderWidth = '';
         });
     });
     
+    // Función para convertir hex a RGB
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+    
+    // Log información para debug
     console.log('🔧 Switch Tenant page loaded');
     console.log('📊 Available tenants:', {{ available_tenants|length }});
     console.log('🏢 Current tenant:', '{{ current_tenant }}');
+    
+    {% if tenant %}
+    console.log('🎨 Current tenant colors:', {
+        primary: '{{ tenant.colors.primary if tenant.colors else "Not defined" }}',
+        secondary: '{{ tenant.colors.secondary if tenant.colors else "Not defined" }}',
+        accent: '{{ tenant.colors.accent if tenant.colors else "Not defined" }}'
+    });
+    {% endif %}
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Números 1-9 para cambiar a tenants
+        if (e.key >= '1' && e.key <= '9') {
+            const tenantIndex = parseInt(e.key) - 1;
+            const tenantLinks = document.querySelectorAll('.tenant-card .btn-primary');
+            if (tenantLinks[tenantIndex]) {
+                tenantLinks[tenantIndex].click();
+            }
+        }
+        
+        // Escape para volver
+        if (e.key === 'Escape') {
+            window.location.href = '/';
+        }
+    });
 });
 </script>
 {% endblock %}
