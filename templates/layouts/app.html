@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/dashboard">🏠 Sistema de Gestión</a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/dashboard">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/profile">Perfil</a>
+                </li>
+                {% if user.roles and 'admin' in user.roles %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin">Administración</a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        👤 {{ user.username }}
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/profile">Mi Perfil</a></li>
+                        <li><a class="dropdown-item" href="/settings">Configuración</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/logout">Cerrar Sesión</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="container mt-4">
+    <!-- Alerts -->
+    {% if success %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ success }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    
+    {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    
+    <!-- Page Content -->
+    {% block page_content %}{% endblock %}
+</div>
+
+<!-- Footer -->
+<footer class="bg-light text-center text-muted py-3 mt-5">
+    <div class="container">
+        <small>&copy; 2024 Sistema de Gestión v1.0.0 - Desarrollado con FastAPI</small>
+    </div>
+</footer>
+{% endblock %}

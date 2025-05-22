@@ -3,6 +3,7 @@ Middleware de sesiones para FastAPI
 """
 from fastapi import Request
 from starlette.middleware.sessions import SessionMiddleware as BaseSessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp, Scope, Receive, Send
 from typing import Dict, Any, Optional
 import json
@@ -220,51 +221,44 @@ class EnhancedSessionManager:
         }
 
 # Middleware personalizado para añadir funcionalidades
-class SessionEnhancerMiddleware:
+class SessionEnhancerMiddleware(BaseHTTPMiddleware):
     """
-    Middleware adicional para mejorar las sesiones con información de context
+    Middleware adicional para mejorar las sesiones con información de contexto
     """
     
     def __init__(self, app: ASGIApp):
-        self.app = app
+        super().__init__(app)
     
-    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+    async def dispatch(self, request: Request, call_next):
         """
         Añade información de contexto a las sesiones
         
         Args:
-            scope: Información del ámbito de la solicitud
-            receive: Canal para recibir mensajes  
-            send: Canal para enviar mensajes
+            request: Request de FastAPI
+            call_next: Siguiente middleware/handler
         """
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-        
-        async def enhanced_send(message):
-            if message["type"] == "http.response.start":
-                # Aquí podrías añadir headers adicionales si es necesario
-                pass
-            await send(message)
-        
-        # Crear un request para acceder a la sesión
-        request = Request(scope, receive)
+        # Procesar la request
+        response = await call_next(request)
         
         # Añadir información de contexto si hay sesión activa
-        if hasattr(request, 'session') and request.session.get("authenticated"):
-            # Actualizar última actividad
-            EnhancedSessionManager.update_last_activity(request.session)
-            
-            # Añadir información de request si no existe
-            if not request.session.get("ip_address"):
-                request.session["ip_address"] = request.client.host if request.client else "unknown"
-            
-            if not request.session.get("user_agent"):
-                request.session["user_agent"] = request.headers.get("user-agent", "unknown")
-            
-            # Verificar expiración de sesión
-            if EnhancedSessionManager.is_session_expired(request.session):
-                logger.info(f"Sesión expirada para usuario: {request.session.get('username')}")
-                request.session.clear()
+        try:
+            if hasattr(request, 'session') and request.session.get("authenticated"):
+                # Actualizar última actividad
+                EnhancedSessionManager.update_last_activity(request.session)
+                
+                # Añadir información de request si no existe
+                if not request.session.get("ip_address"):
+                    request.session["ip_address"] = request.client.host if request.client else "unknown"
+                
+                if not request.session.get("user_agent"):
+                    request.session["user_agent"] = request.headers.get("user-agent", "unknown")
+                
+                # Verificar expiración de sesión
+                if EnhancedSessionManager.is_session_expired(request.session):
+                    logger.info(f"Sesión expirada para usuario: {request.session.get('username')}")
+                    request.session.clear()
+        except Exception as e:
+            # Si hay error con la sesión, continuar sin problemas
+            logger.debug(f"Error en SessionEnhancerMiddleware: {e}")
         
-        await self.app(scope, receive, enhanced_send)
+        return response

@@ -1,0 +1,102 @@
+{% extends "layouts/app.html" %}
+
+{% block page_content %}
+<!-- Bienvenida -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>🎉 Dashboard</h1>
+            <div class="badge bg-success fs-6">Bienvenido, {{ user.username }}!</div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body text-center">
+                <h5 class="card-title">👥 Usuarios Totales</h5>
+                <h2>{{ dashboard_data.stats.total_users }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <h5 class="card-title">🟢 Sesiones Activas</h5>
+                <h2>{{ dashboard_data.stats.active_sessions }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center">
+                <h5 class="card-title">📊 Total Requests</h5>
+                <h2>{{ dashboard_data.stats.total_requests }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body text-center">
+                <h5 class="card-title">⏱️ Uptime</h5>
+                <h6>{{ dashboard_data.stats.system_uptime }}</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actividad Reciente -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>📈 Actividad Reciente</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for activity in dashboard_data.recent_activity %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ activity.action }}</h6>
+                            <small>{{ activity.time }}</small>
+                        </div>
+                        <p class="mb-1">Usuario: <strong>{{ activity.user }}</strong></p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>ℹ️ Información de Sesión</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Usuario:</strong> {{ user.username }}</p>
+                <p><strong>Roles:</strong> 
+                    {% if user.roles %}
+                        {{ user.roles | join(', ') }}
+                    {% else %}
+                        Sin roles
+                    {% endif %}
+                </p>
+                <p><strong>ID:</strong> {{ user.user_id }}</p>
+                <hr>
+                <h6>Acciones Rápidas</h6>
+                <div class="d-grid gap-2">
+                    <a href="/profile" class="btn btn-outline-primary">Ver Perfil</a>
+                    <a href="/health" class="btn btn-outline-info">Estado Sistema</a>
+                    {% if user.roles and 'admin' in user.roles %}
+                    <a href="/admin" class="btn btn-outline-warning">Panel Admin</a>
+                    {% endif %}
+                    <a href="/logout" class="btn btn-danger">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
