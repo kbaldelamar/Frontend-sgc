@@ -1,5 +1,5 @@
 """
-Middleware para detectar y configurar tenants automáticamente
+Middleware para detectar y configurar tenants automáticamente - Versión simple con Settings
 """
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -9,41 +9,38 @@ import time
 from typing import Optional, Callable, List
 
 from config.tenant_config import tenant_config
+from config.settings import settings  # ✅ Importar settings
 
 logger = logging.getLogger(__name__)
 
 class TenantMiddleware(BaseHTTPMiddleware):
     """
-    Middleware que detecta el tenant basado en el dominio/subdominio
-    y configura la aplicación accordingly
+    Middleware que detecta el tenant - Versión SIMPLE que usa Settings
     """
     
     def __init__(self, app: ASGIApp):
         super().__init__(app)
+        
+        # ✅ Estrategias simples: query param tiene prioridad, luego Settings
         self.detection_strategies: List[Callable] = [
-            self._detect_from_query_param,
-            self._detect_from_header,
-            self._detect_from_subdomain,
-            self._detect_from_domain,
-            self._detect_from_environment
+            self._detect_from_query_param,    # Para testing: ?tenant=biomed
+            self._detect_from_settings        # Desde Settings (DEFAULT_TENANT)
         ]
-        logger.info("TenantMiddleware inicializado")
+        
+        logger.info(f"🏢 TenantMiddleware inicializado")
+        logger.info(f"🎯 Tenant configurado en Settings: {settings.DEFAULT_TENANT}")
+        logger.info(f"💡 Para cambiar tenant, modifica DEFAULT_TENANT en Settings o usa ?tenant=nombre")
     
     async def dispatch(self, request: Request, call_next):
         """
         Detecta el tenant y añade la configuración al request
-        
-        Args:
-            request: Request de FastAPI
-            call_next: Siguiente middleware/handler
         """
         start_time = time.time()
         
         # Obtener información del host
         host = request.headers.get("host", "localhost")
-        user_agent = request.headers.get("user-agent", "")
         
-        # Detectar tenant usando múltiples estrategias
+        # ✅ Detectar tenant (súper simple)
         tenant_id = self._detect_tenant(request, host)
         
         # Obtener configuración del tenant
@@ -54,127 +51,61 @@ class TenantMiddleware(BaseHTTPMiddleware):
         request.state.tenant_config = tenant_branding
         request.state.tenant_detection_time = time.time() - start_time
         
-        # Log de detección de tenant
-        logger.info(
-            f"Tenant detectado: {tenant_id} para host: {host} "
-            f"(tiempo: {request.state.tenant_detection_time:.3f}s)"
-        )
+        # Log simple
+        logger.info(f"🏢 Usando tenant: {tenant_id} para {host}")
         
         # Procesar request
         try:
             response = await call_next(request)
             
-            # Añadir headers personalizados del tenant
-            self._add_tenant_headers(response, tenant_id, tenant_branding, request)
+            # Añadir headers básicos del tenant (solo en debug)
+            if settings.DEBUG:
+                response.headers["X-Tenant-ID"] = tenant_id
+                response.headers["X-Tenant-Name"] = tenant_branding.company_name
             
             return response
             
         except Exception as e:
-            logger.error(f"Error procesando request para tenant {tenant_id}: {str(e)}")
+            logger.error(f"❌ Error procesando request para tenant {tenant_id}: {str(e)}")
             raise
     
     def _detect_tenant(self, request: Request, host: str) -> str:
         """
-        Detecta el tenant usando múltiples estrategias en orden de prioridad
-        
-        Args:
-            request: Request de FastAPI
-            host: Host header del request
-            
-        Returns:
-            str: ID del tenant detectado
+        Detecta el tenant de forma SIMPLE
         """
-        for strategy in self.detection_strategies:
-            try:
-                tenant_id = strategy(request, host)
-                if tenant_id and tenant_config.is_valid_tenant(tenant_id):
-                    logger.debug(f"Tenant detectado con estrategia {strategy.__name__}: {tenant_id}")
-                    return tenant_id
-            except Exception as e:
-                logger.warning(f"Error en estrategia {strategy.__name__}: {e}")
-                continue
+        # 1. Verificar query parameter (para testing)
+        tenant_param = request.query_params.get("tenant")
+        if tenant_param and tenant_config.is_valid_tenant(tenant_param):
+            logger.debug(f"✅ Usando tenant desde query param: {tenant_param}")
+            return tenant_param
         
-        # Si ninguna estrategia funciona, usar default
-        logger.debug("Usando tenant por defecto")
+        # 2. Usar el configurado en Settings
+        tenant_from_settings = settings.DEFAULT_TENANT
+        if tenant_config.is_valid_tenant(tenant_from_settings):
+            logger.debug(f"✅ Usando tenant desde Settings: {tenant_from_settings}")
+            return tenant_from_settings
+        
+        # 3. Fallback a default si el configurado no existe
+        logger.warning(f"⚠️ Tenant configurado no existe: {tenant_from_settings}, usando 'default'")
         return "default"
     
     def _detect_from_query_param(self, request: Request, host: str) -> Optional[str]:
-        """Estrategia 1: Query parameter (para testing/debugging)"""
-        tenant_param = request.query_params.get("tenant")
-        if tenant_param:
-            logger.debug(f"Tenant detectado por query param: {tenant_param}")
-            return tenant_param.lower()
-        return None
+        """Detectar desde query parameter (?tenant=biomed)"""
+        return request.query_params.get("tenant")
     
-    def _detect_from_header(self, request: Request, host: str) -> Optional[str]:
-        """Estrategia 2: Header personalizado X-Tenant-ID"""
-        tenant_header = request.headers.get("X-Tenant-ID")
-        if tenant_header:
-            logger.debug(f"Tenant detectado por header: {tenant_header}")
-            return tenant_header.lower()
-        return None
-    
-    def _detect_from_subdomain(self, request: Request, host: str) -> Optional[str]:
-        """Estrategia 3: Subdominio"""
-        tenant_id = tenant_config.get_tenant_from_subdomain(host)
-        if tenant_id != "default":
-            logger.debug(f"Tenant detectado por subdominio: {tenant_id}")
-            return tenant_id
-        return None
-    
-    def _detect_from_domain(self, request: Request, host: str) -> Optional[str]:
-        """Estrategia 4: Dominio completo"""
-        tenant_id = tenant_config.get_tenant_from_domain(host)
-        if tenant_id != "default":
-            logger.debug(f"Tenant detectado por dominio: {tenant_id}")
-            return tenant_id
-        return None
-    
-    def _detect_from_environment(self, request: Request, host: str) -> Optional[str]:
-        """Estrategia 5: Variable de entorno por defecto"""
-        import os
-        default_tenant = os.getenv("DEFAULT_TENANT", "default")
-        logger.debug(f"Usando tenant de variable de entorno: {default_tenant}")
-        return default_tenant
-    
-    def _add_tenant_headers(self, response: Response, tenant_id: str, tenant_config_obj, request: Request):
-        """
-        Añade headers específicos del tenant a la respuesta
-        
-        Args:
-            response: Response de FastAPI
-            tenant_id: ID del tenant
-            tenant_config_obj: Configuración del tenant
-            request: Request de FastAPI
-        """
-        # Headers informativos (solo en desarrollo)
-        import os
-        if os.getenv("DEBUG", "False").lower() == "true":
-            response.headers["X-Tenant-ID"] = tenant_id
-            response.headers["X-Tenant-Name"] = tenant_config_obj.company_name
-            response.headers["X-Tenant-Version"] = "1.0"
-        
-        # Header de CSP personalizado por tenant si existe
-        if hasattr(tenant_config_obj, 'custom_csp') and tenant_config_obj.custom_csp:
-            response.headers["Content-Security-Policy"] = tenant_config_obj.custom_csp
-        
-        # Headers de cache personalizados según el tipo de recurso
-        if request.url.path.startswith("/static/"):
-            # Cache más agresivo para recursos estáticos
-            response.headers["Cache-Control"] = "public, max-age=31536000"
-        elif request.url.path in ["/tenant.css", "/tenant/config.js"]:
-            # Cache moderado para recursos dinámicos del tenant
-            response.headers["Cache-Control"] = "public, max-age=3600"
+    def _detect_from_settings(self, request: Request, host: str) -> Optional[str]:
+        """Detectar desde Settings (DEFAULT_TENANT)"""
+        return settings.DEFAULT_TENANT
 
 class TenantContextManager:
     """
-    Manejador de contexto para operaciones específicas del tenant
+    Manejador de contexto simple para operaciones del tenant
     """
     
     @staticmethod
     def get_tenant_from_request(request: Request) -> str:
         """Obtiene el tenant ID del request state"""
-        return getattr(request.state, 'tenant_id', 'default')
+        return getattr(request.state, 'tenant_id', settings.DEFAULT_TENANT)
     
     @staticmethod
     def get_tenant_config_from_request(request: Request):
@@ -188,7 +119,7 @@ class TenantContextManager:
         
         Args:
             request: Request de FastAPI
-            feature: Nombre de la feature (registration, 2fa, etc.)
+            feature: Nombre de la feature (registration, password_reset, remember_me, 2fa)
             
         Returns:
             bool: True si la feature está habilitada
@@ -292,7 +223,93 @@ class TenantContextManager:
         
         for feature in required_features:
             if not TenantContextManager.is_tenant_feature_enabled(request, feature):
-                logger.warning(f"Feature '{feature}' no habilitada para tenant: {TenantContextManager.get_tenant_from_request(request)}")
+                tenant_id = TenantContextManager.get_tenant_from_request(request)
+                logger.warning(f"Feature '{feature}' no habilitada para tenant: {tenant_id}")
                 return False
         
         return True
+    
+    @staticmethod
+    def get_tenant_colors(request: Request) -> dict:
+        """
+        Obtiene los colores del tenant actual
+        
+        Args:
+            request: Request de FastAPI
+            
+        Returns:
+            dict: Colores del tenant
+        """
+        tenant_config_obj = TenantContextManager.get_tenant_config_from_request(request)
+        if not tenant_config_obj:
+            return {
+                'primary': '#007bff',
+                'secondary': '#6c757d',
+                'accent': '#0056b3',
+                'success': '#28a745',
+                'danger': '#dc3545',
+                'warning': '#ffc107',
+                'info': '#17a2b8'
+            }
+        
+        return {
+            'primary': getattr(tenant_config_obj, 'primary_color', '#007bff'),
+            'secondary': getattr(tenant_config_obj, 'secondary_color', '#6c757d'),
+            'accent': getattr(tenant_config_obj, 'accent_color', '#0056b3'),
+            'success': getattr(tenant_config_obj, 'success_color', '#28a745'),
+            'danger': getattr(tenant_config_obj, 'danger_color', '#dc3545'),
+            'warning': getattr(tenant_config_obj, 'warning_color', '#ffc107'),
+            'info': getattr(tenant_config_obj, 'info_color', '#17a2b8')
+        }
+    
+    @staticmethod
+    def get_tenant_contact_info(request: Request) -> dict:
+        """
+        Obtiene información de contacto del tenant
+        
+        Args:
+            request: Request de FastAPI
+            
+        Returns:
+            dict: Información de contacto
+        """
+        tenant_config_obj = TenantContextManager.get_tenant_config_from_request(request)
+        if not tenant_config_obj:
+            return {
+                'support_email': '',
+                'support_phone': '',
+                'website_url': ''
+            }
+        
+        return {
+            'support_email': getattr(tenant_config_obj, 'support_email', ''),
+            'support_phone': getattr(tenant_config_obj, 'support_phone', ''),
+            'website_url': getattr(tenant_config_obj, 'website_url', '')
+        }
+    
+    @staticmethod
+    def get_tenant_urls(request: Request) -> dict:
+        """
+        Obtiene URLs importantes del tenant
+        
+        Args:
+            request: Request de FastAPI
+            
+        Returns:
+            dict: URLs del tenant
+        """
+        tenant_config_obj = TenantContextManager.get_tenant_config_from_request(request)
+        if not tenant_config_obj:
+            return {
+                'terms': '',
+                'privacy': '',
+                'help': '',
+                'videos': ''
+            }
+        
+        return {
+            'terms': getattr(tenant_config_obj, 'terms_url', ''),
+            'privacy': getattr(tenant_config_obj, 'privacy_url', ''),
+            'help': getattr(tenant_config_obj, 'help_url', ''),
+            'videos': getattr(tenant_config_obj, 'video_tutorials_url', '')
+        }

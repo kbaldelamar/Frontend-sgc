@@ -551,5 +551,34 @@ def run_app():
         reload_dirs=["templates", "static"] if settings.DEBUG else None
     )
 
+    @app.get("/debug/tenant")
+    async def debug_tenant_info(request: Request):
+        """Endpoint para ver qué tenant está activo"""
+        if not settings.DEBUG:
+            raise HTTPException(status_code=404, detail="Not found")
+
+        tenant_id = getattr(request.state, 'tenant_id', 'unknown')
+        tenant_config_obj = getattr(request.state, 'tenant_config', None)
+
+        # Lista de archivos JSON disponibles
+        import os, glob
+        available_files = []
+        if os.path.exists("config/tenants"):
+            json_files = glob.glob("config/tenants/*.json") 
+            available_files = [os.path.basename(f).replace('.json', '') for f in json_files]
+
+        return {
+            "tenant_activo": tenant_id,
+            "configurado_en_settings": settings.DEFAULT_TENANT,
+            "company_name": tenant_config_obj.company_name if tenant_config_obj else "N/A",
+            "archivo_json_usado": f"config/tenants/{tenant_id}.json",
+            "archivos_json_disponibles": sorted(available_files),
+            "como_cambiar": {
+                "opcion_1": "Cambiar DEFAULT_TENANT en .env",
+                "opcion_2": "Cambiar DEFAULT_TENANT en config/settings.py",
+                "opcion_3": "Usar query parameter: ?tenant=nombre"
+            }
+        }
+
 if __name__ == "__main__":
     run_app()

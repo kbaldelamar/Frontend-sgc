@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Configuración de seguridad
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-this-secret-key-in-production")
     
+    # ✅ CONFIGURACIÓN SIMPLE DE TENANT - SOLO ESTO NECESITAS CAMBIAR
+    DEFAULT_TENANT: str = os.getenv("DEFAULT_TENANT", "biomed")  # 🎯 CAMBIA AQUÍ: biomed, coosalud, default, etc.
+    
     # Configuración de sesiones
     SESSION_COOKIE_NAME: str = "session_id"
     SESSION_COOKIE_HTTPONLY: bool = True
