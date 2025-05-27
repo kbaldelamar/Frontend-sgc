@@ -1,0 +1,82 @@
+# templates/errors/404.html
+
+```html
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-page">
+                <div class="error-icon mb-4">
+                    <i class="fas fa-search fa-5x text-muted"></i>
+                </div>
+                
+                <h1 class="display-1 text-primary">404</h1>
+                <h2 class="mb-4">{{ title or "Página no encontrada" }}</h2>
+                <p class="lead mb-4">{{ message or "La página que buscas no existe" }}</p>
+                
+                <div class="error-actions">
+                    <a href="/" class="btn btn-primary btn-lg me-2">
+                        <i class="fas fa-home me-2"></i>
+                        Volver al inicio
+                    </a>
+                    <a href="/dashboard" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Dashboard
+                    </a>
+                </div>
+                
+                {% if tenant and tenant.contact and tenant.contact.support_email %}
+                <div class="mt-5">
+                    <p class="text-muted">
+                        ¿Necesitas ayuda? Contacta a nuestro soporte:
+                        <br>
+                        <a href="mailto:{{ tenant.contact.support_email }}" class="text-decoration-none">
+                            <i class="fas fa-envelope me-1"></i>
+                            {{ tenant.contact.support_email }}
+                        </a>
+                        {% if tenant.contact.support_phone %}
+                        <br>
+                        <a href="tel:{{ tenant.contact.support_phone }}" class="text-decoration-none">
+                            <i class="fas fa-phone me-1"></i>
+                            {{ tenant.contact.support_phone }}
+                        </a>
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+                
+                {% if tenant and tenant.urls and tenant.urls.help %}
+                <div class="mt-3">
+                    <a href="{{ tenant.urls.help }}" target="_blank" class="btn btn-outline-info">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Centro de Ayuda
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: {% if tenant and tenant.gradients and tenant.gradients.background %}{{ tenant.gradients.background }}{% else %}linear-gradient(135deg, #667eea 0%, #764ba2 100%){% endif %};
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+    }
+    
+    .error-page {
+        background: white;
+        padding: 3rem;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
